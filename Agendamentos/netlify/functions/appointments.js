@@ -21,9 +21,9 @@ exports.handler = async (event) => {
       // /.netlify/functions/appointments?weekStart=YYYY-MM-DD&weekEnd=YYYY-MM-DD
       const { weekStart, weekEnd } = event.queryStringParameters || {};
       const { rows } = await client.query(
-        `select * from appointments
-         where date between $1 and $2
-         order by date, period, created_at`,
+        `SELECT * FROM appointments
+         WHERE date BETWEEN $1 AND $2
+         ORDER BY date, period, created_at`,
         [weekStart, weekEnd]
       );
       client.release();
@@ -36,7 +36,7 @@ exports.handler = async (event) => {
 
       // regra: máximo 5 por período
       const c = await client.query(
-        `select count(*) from appointments where date=$1 and period=$2`,
+        `SELECT count(*) FROM appointments WHERE date=$1 AND period=$2`,
         [date, period]
       );
       if (Number(c.rows[0].count) >= 5) {
@@ -45,9 +45,9 @@ exports.handler = async (event) => {
       }
 
       const { rows } = await client.query(
-        `insert into appointments (date, period, plate, car_model, service_type, status, notes)
-         values ($1,$2,$3,$4,$5,$6,$7)
-         returning *`,
+        `INSERT INTO appointments (date, period, plate, car_model, service_type, status, notes)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)
+         RETURNING *`,
         [date, period, plate, car_model, service_type, status, notes]
       );
       client.release();
@@ -58,11 +58,11 @@ exports.handler = async (event) => {
       const body = JSON.parse(event.body || '{}');
       const { id, status, notes } = body;
       const { rows } = await client.query(
-        `update appointments
-           set status = coalesce($2,status),
-               notes  = coalesce($3,notes)
-         where id = $1
-         returning *`,
+        `UPDATE appointments
+           SET status = COALESCE($2,status),
+               notes  = COALESCE($3,notes)
+         WHERE id = $1
+         RETURNING *`,
         [id, status, notes]
       );
       client.release();
@@ -71,7 +71,7 @@ exports.handler = async (event) => {
 
     if (method === 'DELETE') {
       const { id } = JSON.parse(event.body || '{}');
-      await client.query(`delete from appointments where id=$1`, [id]);
+      await client.query(`DELETE FROM appointments WHERE id=$1`, [id]);
       client.release();
       return ok({ deleted: true });
     }
@@ -80,7 +80,7 @@ exports.handler = async (event) => {
     return err(405, 'Método não suportado.');
   } catch (e) {
     console.error(e);
-    return err(500, 'Erro no servidor.');
+    return err(500, 'Erro no servidor: ' + e.message);
   }
 };
 
