@@ -184,13 +184,7 @@
       const list = appointments.filter(x=>bucketOf(x)===bucket).sort((a,b)=>(a.sortIndex||0)-(b.sortIndex||0));
       list.forEach((x,i)=> x.sortIndex = i+1);
     }
-    
-    // --- regras ---
-    const MAX_PER_BUCKET = 5;
-    function countInBucket(bucket) {
-      return appointments.filter(x => bucketOf(x) === bucket).length;
-    }
-function moveWithinBucket(id, bucket, newIndex){
+    function moveWithinBucket(id, bucket, newIndex){
       const list = appointments.filter(x=>bucketOf(x)===bucket).sort((a,b)=>(a.sortIndex||0)-(b.sortIndex||0));
       const idx = list.findIndex(x=>x.id===id);
       if(idx<0) return;
@@ -222,17 +216,11 @@ function moveWithinBucket(id, bucket, newIndex){
         });
       });
     }
-    function onDropAppointment(id, targetBucket, targetIndex) {
+    function onDropAppointment(id, targetBucket, targetIndex){
       const i = appointments.findIndex(a=>a.id===id);
       if(i<0) return;
       const a = appointments[i];
-      
-      // Limite de 5 por bucket (dia+período), excepto 'unscheduled'
-      if (targetBucket !== 'unscheduled' && countInBucket(targetBucket) >= MAX_PER_BUCKET) {
-        alert('Limite de 5 agendamentos para esse período.');
-        return;
-      }
-if(targetBucket==='unscheduled'){
+      if(targetBucket==='unscheduled'){
         a.date = '';
         a.period = '';
       }else{
@@ -350,24 +338,9 @@ if(targetBucket==='unscheduled'){
       wrap.querySelectorAll('button.delete').forEach(b=>b.addEventListener('click', onDelete));
     }
 
-    
     function onCardStatusChange(e){
-      const card = e.target.closest('.appointment');
-      const id = Number(card.dataset.id);
-      const chosen = e.target.dataset.status;
-      // Exclusivo no UI
-      card.querySelectorAll('input[type=checkbox]').forEach(inp => {
-        inp.checked = (inp.dataset.status === chosen);
-      });
-      // Persistir
-      const idx = appointments.findIndex(a => a.id === id);
-      if (idx > -1) {
-        appointments[idx].status = chosen || 'NE';
-        save();
-        renderAll();
-      }
-    }
-);
+      const card = e.target.closest('.appointment'); const id = Number(card.dataset.id); const chosen = e.target.dataset.status;
+      card.querySelectorAll('input[type=checkbox]').forEach(inp=>{ inp.checked = (inp.dataset.status===chosen); });
       const idx = appointments.findIndex(a=>a.id===id);
       if(idx>-1){ appointments[idx].status = chosen; save(); renderAll(); }
     }
@@ -455,32 +428,7 @@ if(targetBucket==='unscheduled'){
       if(!data.plate||!data.car||!data.service||!data.locality) return;
       if(data.date && !data.period){ alert('Seleciona o período (manhã/tarde) para serviços com data.'); return; }
       if(data.date && !data.sortIndex){ data.sortIndex = 9999; }
-      
-      // --- validações adicionais ---
-      // 1) Duplicado simples: mesma matrícula no mesmo dia
-      if (data.date) {
-        const placa = (data.plate || '').trim().toUpperCase();
-        const dup = appointments.some(a =>
-          a.id !== data.id &&
-          (a.date || '') === data.date &&
-          ((a.plate || '').toUpperCase() === placa)
-        );
-        if (dup) {
-          const cont = confirm('Já existe esta matrícula nesse dia. Queres continuar?');
-          if (!cont) return;
-        }
-      }
-      // 2) Limite de 5 por bucket (dia+período)
-      if (data.date && data.period) {
-        const bucket = `${data.date}|${data.period}`;
-        const jaNoBucket = appointments.some(a => a.id === data.id && bucketOf(a) === bucket);
-        const count = countInBucket(bucket);
-        if (!jaNoBucket && count >= MAX_PER_BUCKET) {
-          alert('Limite de 5 agendamentos para esse período.');
-          return;
-        }
-      }
-const idx=appointments.findIndex(a=>a.id===data.id);
+      const idx=appointments.findIndex(a=>a.id===data.id);
       if(idx>-1){ appointments[idx]=data; } else { appointments.push(data); }
       save(); renderAll(); resetForm(); updateLocalityVisual();
     });
